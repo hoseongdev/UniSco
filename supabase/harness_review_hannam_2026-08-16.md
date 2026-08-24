@@ -1,11 +1,30 @@
 # 한남대학교 장학금 하네스 수집 리뷰 — 2026-08-16
 
+---
+
+## 2026-08-22 재검토 — 장학금 공고가 아닌 게시글 6건 SQL에서 제외
+
+아래 목록은 name을 못 채워서 "플래그된 필드 없음(정상)"으로 잘못 통과했던 게시글들 —
+실제로 열어보니 장학금 공고가 아니라 행정 공지·안내문이었음(harness/verify.py의 필수
+필드 체크 부재가 원인, harness 파이프라인 자체는 이후 커밋에서 수정됨). 아래 게시글들은
+SQL 초안에서 제거했고, 이 문서 아래쪽의 해당 항목 섹션은 참고용으로만 남겨둠(SQL엔 이미
+없음).
+
+- [한국장학재단] 2026학년도 여름계절학기 주거안정장학금 7월 및 8월분 지급요청서 작성 및 지급일정 관련 안내(행정 절차 안내, 장학금 아님) — https://janghak.hannam.ac.kr/sub4/menu_1.html?pPostNo=201752&pPageNo=1&pRowCount=12&isGongjiPostList=Y
+- 2026학년도 2학기 장학생 선발 결과(name/description 등 전 필드 추출 실패 — 원문 자체가 결과 공지문일 뿐 신규 모집 공고가 아니라 장학금 스키마로 채울 내용이 없었던 것으로 추정) — https://janghak.hannam.ac.kr/sub4/menu_1.html?pPostNo=201662&pPageNo=1&pRowCount=12&isGongjiPostList=Y
+- [취업연계] 2026-2학기 국가근로장학생(취업연계유형) 2차 면담대상자 안내(선발 결과·면담 일정 공지, 장학금 모집 공고 아님) — https://janghak.hannam.ac.kr/sub4/menu_1.html?pPostNo=201794&pPageNo=1&pRowCount=12&isGongjiPostList=N
+- [학자금대출] 2026-2학기 한국장학재단 학자금대출 신청 및 실행일정 안내(행정 절차 안내, 장학금 아님) — https://janghak.hannam.ac.kr/sub4/menu_1.html?pPostNo=201184&pPageNo=2&pRowCount=12&isGongjiPostList=Y
+- [학자금대출] 2026-2학기 한국장학재단 학자금대출 사전신청 일정 안내(행정 절차 안내, 장학금 아님) — https://janghak.hannam.ac.kr/sub4/menu_1.html?pPostNo=200516&pPageNo=2&pRowCount=12&isGongjiPostList=Y
+- [대청교AI] 2026학년도 대학생 청소년 AI 교육지원사업 멘토 선발결과 안내(선발 결과 공지, 장학금 모집 공고 아님) — https://janghak.hannam.ac.kr/sub4/menu_1.html?pPostNo=201011&pPageNo=2&pRowCount=12&isGongjiPostList=N
+
+---
+
 ## 목록 수집 결과 (원칙 1 — "다 봤는지"를 코드가 대조한 결과)
 - 장학팀 장학공지: 수집 1638건 / 게시판 표시 파싱 안 됨건 — OK
 
 이름+기관 유사도로 스킵된 기존 중복: 0건 · 신규 처리: 38건
 
-## 신규 장학금 38건 (플래그된 필드 총 9개)
+## 신규 장학금 32건 (플래그된 필드 총 9개)
 
 ### 사립학교교직원연금공단 국고학자금대여
 - 출처: https://janghak.hannam.ac.kr/sub4/menu_1.html?pPostNo=201809&pPageNo=1&pRowCount=12&isGongjiPostList=Y
