@@ -74,13 +74,21 @@ def _sql_literal(field_name: str, value) -> str:
     return f"'{escaped}'"
 
 
-def render_sql_insert(university: str, verified_list: list[VerifiedScholarship]) -> str:
-    """기존 data_XXX.sql과 같은 컬럼 순서(schema.sql 기준)의 INSERT 문 초안."""
+def render_sql_insert(university: str, verified_list: list[VerifiedScholarship]) -> str | None:
+    """기존 data_XXX.sql과 같은 컬럼 순서(schema.sql 기준)의 INSERT 문 초안.
+
+    is_scholarship=False인 항목(장학금 공고가 아니라고 판단된 게시글)은 여기서 아예 뺌 —
+    SQL에 안 들어가고 render_review_markdown()의 "제외된 게시글" 섹션에만 남아서 사람이
+    판단이 맞았는지 감사할 수 있게 함. 전부 제외돼서 넣을 행이 하나도 없으면 None(파일
+    자체를 안 만듦 — 컬럼만 있고 VALUES가 없는 깨진 SQL을 만들지 않기 위함)."""
+    scholarship_rows = [v for v in verified_list if v.is_scholarship]
+    if not scholarship_rows:
+        return None
     date_str = datetime.date.today().isoformat()
     columns = ", ".join(SCHOLARSHIP_FIELD_NAMES)
     rows = [
         "(" + ", ".join(_sql_literal(name, v.value(name)) for name in SCHOLARSHIP_FIELD_NAMES) + ")"
-        for v in verified_list
+        for v in scholarship_rows
     ]
     header = (
         f"-- {university} 장학금 — 하네스 자동 수집 초안 ({date_str})\n"
@@ -109,11 +117,29 @@ def render_review_markdown(
     lines.append(f"이름+기관 유사도로 스킵된 기존 중복: {skipped_duplicate_count}건 · 신규 처리: {len(verified_list)}건")
     lines.append("")
 
-    total_flagged = sum(len(v.flagged_fields) for v in verified_list)
-    lines.append(f"## 신규 장학금 {len(verified_list)}건 (플래그된 필드 총 {total_flagged}개)")
+    # 2026-08-22 추가 — is_scholarship=False로 판단된 게시글은 SQL엔 안 들어가지만, LLM
+    # 판단이 틀렸을 수도 있으니 여기 별도 섹션으로 남겨서 사람이 훑어보고 "이건 사실
+    # 장학금인데 잘못 뺐다" 싶으면 되살릴 수 있게 함(render_sql_insert() 참고).
+    scholarship_rows = [v for v in verified_list if v.is_scholarship]
+    excluded_rows = [v for v in verified_list if not v.is_scholarship]
+
+    if excluded_rows:
+        lines.append(f"## 장학금 공고가 아니라고 판단해 제외한 게시글 {len(excluded_rows)}건")
+        lines.append(
+            "SQL 초안에 안 들어감 — 판단이 틀렸다 싶으면 아래 출처를 열어서 직접 확인할 것."
+        )
+        lines.append("")
+        for v in excluded_rows:
+            lines.append(f"- {v.listing_title or '(제목 미확인)'} — {v.source_url}")
+            if v.is_scholarship_reason:
+                lines.append(f"  근거: \"{v.is_scholarship_reason}\"")
+        lines.append("")
+
+    total_flagged = sum(len(v.flagged_fields) for v in scholarship_rows)
+    lines.append(f"## 신규 장학금 {len(scholarship_rows)}건 (플래그된 필드 총 {total_flagged}개)")
     lines.append("")
 
-    for v in verified_list:
+    for v in scholarship_rows:
         name_field = v.fields.get("name")
         title = (name_field.value if name_field and name_field.value else None) or v.listing_title or "(이름 미확인)"
         lines.append(f"### {title}")
@@ -251,14 +277,25 @@ def build_and_open_pr(
     review_md = render_review_markdown(university, verified_list, collection_results, skipped_duplicate_count)
     sql_draft = render_sql_insert(university, verified_list)
 
-    files = {
-        sql_path: sql_draft,
-        md_path: review_md,
-    }
+    # sql_draft가 None인 경우(신규 항목 전부가 is_scholarship=False로 판단돼서 SQL에 넣을
+    # 행이 하나도 없음) — 파일 자체를 안 만듦. 리뷰 마크다운은 "제외된 게시글" 섹션에 사유가
+    # 남으니 PR은 그대로 열어서 사람이 판단이 맞는지 볼 수 있게 함.
+    files = {md_path: review_md}
+    if sql_draft is not None:
+        files[sql_path] = sql_draft
 
-    flagged_total = sum(len(v.flagged_fields) for v in verified_list)
-    commit_message = f"[harness] {university} 장학금 신규 {len(verified_list)}건 초안 ({date_str})"
-    title = f"[하네스 초안] {university} 신규 {len(verified_list)}건 · 확인 필요 {flagged_total}건"
+    scholarship_rows = [v for v in verified_list if v.is_scholarship]
+    excluded_count = len(verified_list) - len(scholarship_rows)
+    flagged_total = sum(len(v.flagged_fields) for v in scholarship_rows)
+    excluded_note = f" · 제외 {excluded_count}건" if excluded_count else ""
+    commit_message = (
+        f"[harness] {university} 장학금 신규 {len(scholarship_rows)}건 초안 "
+        f"({date_str}){excluded_note}"
+    )
+    title = (
+        f"[하네스 초안] {university} 신규 {len(scholarship_rows)}건 · "
+        f"확인 필요 {flagged_total}건{excluded_note}"
+    )
 
     pushed = False
     try:
@@ -270,7 +307,8 @@ def build_and_open_pr(
         # git/PR 단계에서 죽어서 그 결과물을 통째로 날리면 손해가 큼 — 최소한 워크플로 로그에
         # 원문 그대로 남겨서 사람이 수동으로 복구할 수 있게 함.
         _log("git/PR 단계 실패 — 아래 산출물을 워크플로 로그에서 복구할 것:")
-        _log(f"=== {sql_path} ===\n{sql_draft}")
+        if sql_draft is not None:
+            _log(f"=== {sql_path} ===\n{sql_draft}")
         _log(f"=== {md_path} ===\n{review_md}")
         if pushed:
             _delete_remote_branch(branch_name)

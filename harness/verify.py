@@ -18,6 +18,7 @@ from rapidfuzz import fuzz
 from harness import config
 from harness.models import (
     LIST_VALUED_FIELDS,
+    REQUIRED_SCHOLARSHIP_FIELDS,
     ExtractedScholarship,
     VerifiedField,
     VerifiedScholarship,
@@ -71,6 +72,20 @@ def verify_field(name: str, value, source_quote: str, source_text: str) -> Verif
     """필드 하나를 검증. 상태는 세 가지뿐임: not_applicable(정상적으로 빈 값) / confirmed
     (인용이 원문에 있음) / needs_review(사람이 봐야 함, reason에 이유)."""
     empty = _is_empty_value(name, value)
+
+    # 2026-08-22 추가 — name처럼 비어있으면 안 되는 필드는 "원문에 근거 없어서 정상적으로
+    # 비움"(not_applicable) 취급을 하지 않고 무조건 사람이 봐야 함으로 걸러냄. 이전엔 이
+    # 구분이 없어서 name=NULL인 레코드가 "플래그된 필드 없음(정상)"으로 SQL 초안에 그대로
+    # 들어갔었음(목원대 3건/한남대 6건/KAIST 28건, 2026-08-22 발견) — scholarship.name이
+    # DB NOT NULL이라 그 상태로 실행하면 배치 전체가 롤백됨.
+    if empty and name in REQUIRED_SCHOLARSHIP_FIELDS:
+        return VerifiedField(
+            name=name,
+            value=value,
+            source_quote=source_quote,
+            status="needs_review",
+            reason="missing_required_field",
+        )
 
     if empty and not source_quote.strip():
         return VerifiedField(name=name, value=value, source_quote=source_quote, status="not_applicable")
@@ -141,4 +156,10 @@ def verify_scholarship(
 
         fields[name] = verified
 
-    return VerifiedScholarship(source_url=primary.source_url, listing_title=listing_title, fields=fields)
+    return VerifiedScholarship(
+        source_url=primary.source_url,
+        listing_title=listing_title,
+        fields=fields,
+        is_scholarship=primary.is_scholarship,
+        is_scholarship_reason=primary.is_scholarship_reason,
+    )

@@ -213,8 +213,16 @@ def run_for_university(university: str) -> None:
                 _log(f"[extract] 완료: {(listing.title[:40] or listing.url)}")
                 verified_list.append(verified)
 
-    flagged = sum(1 for v in verified_list if v.has_flags)
-    _log(f"[verify] 총 {len(verified_list)}건 중 플래그 있는 항목 {flagged}건")
+    # 2026-08-22 추가 — is_scholarship=False(장학금 공고가 아니라고 판단된 게시글)는 SQL엔
+    # 안 들어가니(build_pr.render_sql_insert 참고) 로그에서도 따로 보여줘서, 나이트런
+    # 로그만 보고도 "이번 배치에 이상한 게 몇 건 걸러졌는지" 바로 알 수 있게 함.
+    not_scholarship = sum(1 for v in verified_list if not v.is_scholarship)
+    scholarship_count = len(verified_list) - not_scholarship
+    flagged = sum(1 for v in verified_list if v.is_scholarship and v.has_flags)
+    _log(
+        f"[verify] 총 {len(verified_list)}건 중 장학금 {scholarship_count}건"
+        f"(플래그 {flagged}건) · 장학금 아님으로 제외 {not_scholarship}건"
+    )
 
     pr_url = build_pr.build_and_open_pr(university, verified_list, collection_results, len(skipped))
     if pr_url:

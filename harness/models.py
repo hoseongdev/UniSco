@@ -23,6 +23,9 @@ SCHOLARSHIP_FIELD_NAMES: tuple[str, ...] = (
     "required_gender",
     "eligible_region",
     "required_military_status",
+    # 2026-08-15 백엔드에 추가된 필드인데 하네스 스키마 미러링이 그때 같이 안 됨(2026-08-22
+    # 재검증 PR 리뷰 중 발견 — 그 사이 수집된 데이터는 이 조건을 아예 못 잡았을 가능성).
+    "required_discharge_type",
     "max_income_bracket",
     "min_gpa",
     "min_gpa_basis",
@@ -61,6 +64,14 @@ LIST_VALUED_FIELDS: frozenset[str] = frozenset(
     {"required_special_status", "required_special_status_all", "excluded_special_status"}
 )
 
+# 비어있으면 안 되는 필드 — 2026-08-22 추가. id=46류 사고 재검증 중, name이 NULL인 채로
+# "플래그된 필드 없음(정상)"으로 통과한 레코드가 목원대 3건/한남대 6건/KAIST 28건(39%!)
+# 발견됨 — scholarship.name이 DB NOT NULL이라 이 상태로 SQL을 실행하면 배치 전체가
+# 실패함(하나의 멀티로우 INSERT문이라 한 행만 잘못돼도 전부 롤백). verify.py가 이 집합에
+# 있는 필드는 비어있으면 무조건 needs_review로 걸러냄(원래 있던 "원문에 근거 없어서
+# 정상적으로 비움" 취급을 안 함 — name이 없는 건 애초에 정상 상태가 아니므로).
+REQUIRED_SCHOLARSHIP_FIELDS: frozenset[str] = frozenset({"name"})
+
 
 @dataclass
 class Listing:
@@ -96,10 +107,20 @@ class ExtractedField:
 
 @dataclass
 class ExtractedScholarship:
-    """extract.py의 단일 호출 결과 (문서 1건 = 이 객체 1개, 상태 없음)."""
+    """extract.py의 단일 호출 결과 (문서 1건 = 이 객체 1개, 상태 없음).
+
+    is_scholarship — 2026-08-22 추가. 하네스가 크롤링하는 게시판엔 "장학공지 게시판이
+    카페로 옮겨갔다는 안내", "계좌정보 등록 안내" 같은 진짜 장학금 공고가 아닌 글도 섞여
+    들어옴 — 기존엔 이런 걸 걸러낼 방법이 없어서 LLM이 억지로 장학금 스키마에 끼워
+    맞추려다 name조차 못 채우는 레코드가 나왔음(2026-08-22 목원/한남/KAIST 재검증 중
+    발견). 기본값 True — 판단 자체가 실패해도(예: 이 필드가 파싱 안 됨) 진짜 장학금을
+    실수로 누락시키는 쪽보다 사람이 검토할 항목이 하나 더 느는 쪽이 안전함("과다매칭이
+    과소매칭보다 낫다" 원칙과 동일한 방향)."""
 
     source_url: str
     fields: dict[str, ExtractedField]
+    is_scholarship: bool = True
+    is_scholarship_reason: str = ""
 
     def get(self, name: str) -> ExtractedField:
         return self.fields[name]
@@ -127,6 +148,8 @@ class VerifiedScholarship:
     source_url: str
     listing_title: str
     fields: dict[str, VerifiedField]
+    is_scholarship: bool = True
+    is_scholarship_reason: str = ""
 
     @property
     def flagged_fields(self) -> list[VerifiedField]:

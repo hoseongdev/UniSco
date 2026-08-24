@@ -32,7 +32,11 @@ _PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 # 끌어오지 않기 위해(harness/requirements.txt에 FastAPI/SQLModel을 추가하고 싶지 않음)
 # 여기 값을 그대로 미러링함. 백엔드 enum이 바뀌면 여기와 extraction_spec.md도 같이 고칠 것.
 _GENDER = ["male", "female"]
-_MILITARY_STATUS = ["completed", "exempted", "not_served"]
+# rotc_candidate — 2026-08-15 백엔드에 추가됐는데 여기 미러링이 그때 같이 안 됨(2026-08-22
+# 발견). not_applicable은 UserSpec 쪽(학생 자기입력)에서만 쓰는 값이라 여긴 일부러 안 넣음 —
+# "이 장학금이 요구하는 병역"으로 쓰이는 거라 "해당사항 없음"이 의미가 안 맞음.
+_MILITARY_STATUS = ["completed", "exempted", "not_served", "rotc_candidate"]
+_DISCHARGE_TYPE = ["enlisted", "officer_or_nco"]
 _GPA_BASIS = ["semester", "cumulative", "both"]
 _DISABILITY_TYPE = [
     "physical_impairment",
@@ -111,6 +115,13 @@ _FIELD_VALUE_SCHEMAS: dict[str, dict] = {
     "required_gender": {"type": ["string", "null"], "enum": [*_GENDER, None]},
     "eligible_region": {"type": ["string", "null"]},
     "required_military_status": {"type": ["string", "null"], "enum": [*_MILITARY_STATUS, None]},
+    "required_discharge_type": {
+        "type": ["string", "null"],
+        "enum": [*_DISCHARGE_TYPE, None],
+        "description": "required_military_status가 completed(군필)일 때만 의미 있는 세부구분. "
+        "군필 여부만 나온 공고면 비워둘 것 — '전역', '제대군인'만으로는 부족하고 병사/장교·"
+        "부사관 구분이 원문에 명시된 경우만 채움",
+    },
     "max_income_bracket": {"type": ["integer", "null"]},
     "min_gpa": {"type": ["number", "null"]},
     "min_gpa_basis": {"type": ["string", "null"], "enum": [*_GPA_BASIS, None]},
@@ -171,7 +182,28 @@ def load_extraction_spec() -> str:
 
 
 def _build_input_schema(field_names: tuple[str, ...]) -> dict:
-    properties = {}
+    # is_scholarship — 2026-08-22 추가. 필드별 스키마(properties 루프)와 별개로 문서 전체에
+    # 대한 판단이라 SCHOLARSHIP_FIELD_NAMES(=Scholarship 테이블 컬럼)에는 안 넣고 여기서
+    # 최상위 프로퍼티로 따로 둠 — 나머지 필드들과 값+근거 모양은 동일하게 맞춤(코드 경로 재사용).
+    properties: dict = {
+        "is_scholarship": {
+            "type": "object",
+            "properties": {
+                "field_value": {
+                    "type": "boolean",
+                    "description": "이 문서가 실제 장학금(또는 학자금 지원금) 공고문이면 true. "
+                    "게시판 공지사항 채널 변경 안내, 계좌정보 등록 안내, 서약서 제출 방법 안내처럼 "
+                    "장학금 자체가 아니라 행정 절차·공지에 관한 글이면 false.",
+                },
+                "source_quote": {
+                    "type": "string",
+                    "description": "false일 때만: 장학금 공고가 아니라고 판단한 근거가 "
+                    "된 원문 문구. true면 빈 문자열.",
+                },
+            },
+            "required": ["field_value", "source_quote"],
+        }
+    }
     for name in field_names:
         properties[name] = {
             "type": "object",
@@ -184,7 +216,11 @@ def _build_input_schema(field_names: tuple[str, ...]) -> dict:
             },
             "required": ["field_value", "source_quote"],
         }
-    return {"type": "object", "properties": properties, "required": list(field_names)}
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": ["is_scholarship", *field_names],
+    }
 
 
 def extract_scholarship(
@@ -206,8 +242,9 @@ def extract_scholarship(
     tool = {
         "name": "extract_scholarship",
         "description": (
-            "장학금 공고문 원문에서 구조화된 필드를 추출한다. "
-            "각 필드는 값(field_value)과 그 근거가 된 원문 인용(source_quote)을 함께 반환해야 한다."
+            "장학금 공고문 원문에서 구조화된 필드를 추출한다. 먼저 이 문서가 실제 장학금 "
+            "공고문인지(is_scholarship) 판단하고, 각 필드는 값(field_value)과 그 근거가 된 "
+            "원문 인용(source_quote)을 함께 반환해야 한다."
         ),
         "input_schema": _build_input_schema(field_names),
     }
@@ -266,4 +303,18 @@ def extract_scholarship(
             value = []
         fields[name] = ExtractedField(value=value, source_quote=entry.get("source_quote") or "")
 
-    return ExtractedScholarship(source_url=source_url, fields=fields)
+    # 기본값 True — is_scholarship 자체가 스키마에서 required라 정상 호출이면 항상 채워져
+    # 있지만, 혹시나 파싱이 이상해도(예: 모델이 이 키를 통째로 빠뜨림) 진짜 장학금을 실수로
+    # 누락시키기보다는 사람이 검토할 항목이 하나 느는 쪽이 안전함.
+    is_scholarship_entry = raw.get("is_scholarship") or {}
+    is_scholarship = is_scholarship_entry.get("field_value")
+    if is_scholarship is None:
+        is_scholarship = True
+    is_scholarship_reason = is_scholarship_entry.get("source_quote") or ""
+
+    return ExtractedScholarship(
+        source_url=source_url,
+        fields=fields,
+        is_scholarship=is_scholarship,
+        is_scholarship_reason=is_scholarship_reason,
+    )
