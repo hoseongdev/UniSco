@@ -3,9 +3,10 @@ name: harness nightly
 # 매일 밤 대학 1~2곳 분량을 수집·추출·검증해서 초안 PR을 엶(설계안 5장). 머지는 사람이 직접 —
 # 이 워크플로는 PR을 여는 데서 끝나고, DB에는 아무것도 쓰지 않음(harness/build_pr.py 참고).
 on:
-  schedule:
-    # 매일 17:00 UTC = 새벽 2시 KST(UTC+9).
-    - cron: "0 17 * * *"
+  # 2026-08-24 사용자 요청으로 자동 크론 일시 중지 — 아래 schedule 블록을 되살리면 재개됨.
+  # schedule:
+  #   # 매일 17:00 UTC = 새벽 2시 KST(UTC+9).
+  #   - cron: "0 17 * * *"
   workflow_dispatch:
     inputs:
       university:
