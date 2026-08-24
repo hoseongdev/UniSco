@@ -1,7 +1,14 @@
 -- 2026-08-18 외부(재단/지자체) 장학금 295건 구조화 점검 후 발견한 실제 누락분 반영
 -- (소득분위 숫자/중위소득% 미변환, 이수학점 조건 미구조화, 백분위 성적 조건 신설)
+--
+-- min_score_percentile 컬럼 생성을 원래 별도 파일(migration_2026-08-18_min_score_percentile_column.sql)로
+-- 뺐었는데, 파일명이 알파벳순으로 이 파일보다 뒤라 순서대로 실행하면 "컬럼 없음" 에러가 남 —
+-- 기존 컨벤션(예: migration_2026-08-15_discharge_type.sql)대로 컬럼 생성과 데이터 반영을
+-- 한 파일에 합쳐서 순서 문제 자체를 없앰(2026-08-22).
 
 BEGIN;
+
+ALTER TABLE scholarship ADD COLUMN IF NOT EXISTS min_score_percentile FLOAT;
 
 -- 백분위 성적(100점 만점) 조건 — min_score_percentile 신설 필드로 구조화
 UPDATE scholarship SET min_score_percentile = 90 WHERE id = 173;  -- 서울인재대학장학금
