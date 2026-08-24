@@ -1,11 +1,43 @@
 # KAIST 장학금 하네스 수집 리뷰 — 2026-08-16
 
+---
+
+## 2026-08-22 재검토 — 장학금 공고가 아닌 게시글 22건(67%) SQL에서 제외
+
+name을 못 채워서 "플래그된 필드 없음(정상)"으로 잘못 통과했던 게시글 22건을 직접 열어보니
+전부 장학금 공고가 아니라 세미나·채용·Open House·학위논문 규정·설비 안내 같은 학과
+행정공지였음(harness/verify.py의 필수 필드 체크 부재가 원인, harness 파이프라인 자체는
+이후 커밋에서 수정됨). SQL 초안에서 전부 제거했고, 이 문서 아래쪽의 해당 항목 섹션은
+참고용으로만 남겨둠(SQL엔 이미 없음).
+
+이 33건 배치 자체가 **동일 게시글이 배치 내에서 2번씩 중복 수집**된 상태였음(신소재공학과
+공지 게시판을 두 번 훑은 것으로 추정) — 그래서 제외 대상 12종 중 10종이 각각 정확히
+2건씩 나옴. 이는 harness/dedup.py가 기존 DB 레코드와만 비교하고 같은 실행 내 신규 항목
+끼리는 비교하지 않아서 생기는 별개 버그로(11건 생존자 중에도 신세계그룹/Merck/삼성디스플레이
+EPSD 건이 표현만 다르게 중복 존재), 지금은 손 안 대고 있음 — 나중에 배치 내부 중복 제거
+로직을 따로 추가해야 함.
+
+- 2026 삼성전자 MX사업부 Tech & Career 세미나 (×2, 채용설명회 공지) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389264
+- 플렉셀스페이스(주) 채용(~9/31) (×2, 채용 공고) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389250
+- [동원그룹] 2026 동원그룹 Open House로 여러분을 초대합니다! (08.25~26) (×2, 채용설명회 공지) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389260
+- 박사학위 청구논문 심사 (×2, 학위 규정 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389060
+- 박사졸업논문 최소요건 (×2, 학위 규정 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389062
+- 박사과정 자격시험 세부규정 (×2, 학위 규정 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389061
+- 박사학위 예비심사 (프로포잘) 신청 (×2, 학위 규정 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389059
+- 대학원과정 이수요건 (×2, 학위 규정 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389058
+- 신소재공학과 학부 교과목 이수체계 (×2, 커리큘럼 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=386090
+- 신소재공학과 시설안전및화재예방 등을 위한 CCTV 설치 안내 (×2, 시설 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=385374
+- KAIST 신소재공학과 대학원 OPEN HOUSE 2026 (×1, 행사 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=388935
+- [고용노동부x(주)메이크인 대전지사] 국민취업지원제도 (×1, 정부 지원제도 안내) — https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=388721
+
+---
+
 ## 목록 수집 결과 (원칙 1 — "다 봤는지"를 코드가 대조한 결과)
 - 신소재공학과 공지사항(장학 공고 포함): 수집 109건 / 게시판 표시 파싱 안 됨건 — OK
 
 이름+기관 유사도로 스킵된 기존 중복: 0건 · 신규 처리: 33건
 
-## 신규 장학금 33건 (플래그된 필드 총 26개)
+## 신규 장학금 11건 (플래그된 필드 총 26개)
 
 ### 2026 삼성전자 MX사업부 Tech & Career 세미나
 - 출처: https://mse.kaist.ac.kr/index.php?mid=mse_notice&page=1&document_srl=389264
