@@ -194,6 +194,16 @@ class SpecialStatus(str, Enum):
     # 해당하는 경우는 required_special_status에 둘 다 넣으면 됨).
     PARENT_UNIVERSITY_STAFF = "parent_university_staff"  # 부모가 재학 대학(원) 교직원
     PARENT_UNIVERSITY_ALUMNI = "parent_university_alumni"  # 부모가 재학 대학(원) 동문(졸업생)
+    # 2026-08-25 추가 — parent_occupation_condition(확인 불가) 21건을 다시 전수 재검토(분류기준
+    # 구체화 논의 중)해서 3그룹으로 승격. staff/alumni 승격(위)과 동일한 이유 — "본인 or 부모가
+    # 이 직업군인가요"에 예/아니오로 답할 수 있는 명확한 사실이라 확인 불가로 둘 이유가 없음.
+    # 사용자 확정(2026-08-25): 8~9개로 잘게 쪼개는 대신 3그룹으로 크게 묶기로 결정.
+    PARENT_CIVIL_SERVANT = "parent_civil_servant"  # 부모가 공무원(교사·경찰·소방·군인 등)
+    # 원문상 "본인 또는 부모"인 경우가 섞여 있어 본인 근로 상태도 포함(예: 산업체 노동자
+    # 학생 본인, 상공회의소 회원사 재직 근로자 본인). 환경미화원(지자체 소속 근로자, 정식
+    # 공무원 신분과는 다름)도 이 그룹으로 분류함 — 매칭엔 지장 없음(둘 다 같은 태그).
+    PARENT_SMALL_BUSINESS_OR_WORKER = "parent_small_business_or_worker"  # 중소기업·산업체 근로자 또는 소상공인(본인/부모)
+    PARENT_LOCAL_SERVICE_LEADER = "parent_local_service_leader"  # 이장·통장·새마을지도자 등 지역 봉사·자치직
     # 2026-08-07 추가 — "해당사항 없음". 지금까지 특수상황 칸을 하나도 안 누른 학생은 "아직
     # 대답 안 함"으로 취급돼서(special_status_matches()의 leniency) 특수상황 조건이 걸린
     # 장학금도 계속 노출됐는데, "나는 이 중 어디에도 해당 안 함"을 확정하고 싶은 학생에게는

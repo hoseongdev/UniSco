@@ -351,6 +351,11 @@ export const SPECIAL_STATUS_OPTIONS = [
   // national_merit·righteous_person_family_condition과 같은 이유(명확한 자기신고 가능
   // 사실)로 승격. backend/app/models/enums.py의 PARENT_CLERGY_OR_MISSIONARY 참고.
   { value: "parent_clergy_or_missionary", label: "부모가 목회자·선교사" },
+  // 2026-08-25 추가 — parent_occupation_condition(확인 불가) 21건 재검토·3그룹 승격.
+  // backend/app/models/enums.py의 PARENT_CIVIL_SERVANT 등 참고.
+  { value: "parent_civil_servant", label: "부모가 공무원(교사·경찰·소방·군인 등)" },
+  { value: "parent_small_business_or_worker", label: "중소기업·산업체 근로자 또는 소상공인(본인/부모)" },
+  { value: "parent_local_service_leader", label: "부모가 이장·통장·새마을지도자 등 지역 봉사·자치직" },
 ];
 
 /** SPECIAL_STATUS_OPTIONS의 MultiPillSelect onChange에 그대로 씌워서, "해당사항 없음"과
