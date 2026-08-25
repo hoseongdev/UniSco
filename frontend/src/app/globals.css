@@ -4,42 +4,84 @@
    표면 질감(그림자/배경)만 바꾸는 작업. 배경을 순백에서 아주 옅은 블루 톤으로 바꾼 이유는
    뉴모피즘 원리상 그림자만으로 입체감을 내려면 요소 배경색이 부모 배경과 거의 같아야
    하는데, 순백(#fff) 위에서는 밝은 쪽 하이라이트가 배경과 구분이 안 돼 그림자 효과 자체가
-   실종됨 — #fff보다 살짝 어두운 블루그레이 바탕이어야 흰 쪽 하이라이트가 "빛"처럼 보임. */
+   실종됨 — #fff보다 살짝 어두운 블루그레이 바탕이어야 흰 쪽 하이라이트가 "빛"처럼 보임.
+
+   2026-08-25 "토스 느낌인데 디테일이 죽어있다" 리디자인 — 레이아웃/컴포넌트 구조는 그대로
+   두고 표면 아래 토큰 레이어만 손봄(팔레트·타이포·그림자). 발견한 것: body가 애초에
+   font-family를 Arial/Helvetica로 박아둬서 layout.tsx가 힘들게 로드해온 Geist 변수를 단
+   한 번도 실제로 안 쓰고 있었음(게다가 Geist는 라틴 전용이라 한글은 못 그림) — 한글까지
+   커버하는 Pretendard Variable로 교체(layout.tsx 참고)한 게 이번 리디자인에서 제일 큰
+   레버. 색도 Tailwind 기본 blue/gray 그대로 흩어져 쓰고 있던 걸(파일 수십 개, 하나하나
+   못 고침) @theme에서 blue/gray 스케일 자체를 재정의해서 코드 한 줄 안 건드리고 전체
+   팔레트를 바꿈 — blue는 토스 시그니처 블루(#3182F6) 기준으로, gray는 순회색 대신 파란
+   기가 살짝 도는 "cool neutral" 스케일로(배경의 블루 톤과 어울리게). 그림자는 기존
+   듀얼톤 뉴모피즘 원리는 유지하되 퍼짐/불투명도를 줄여서 "뭉개진 덩어리"보다 "얇고
+   또렷한 판" 느낌으로 크롭. */
 :root {
-  --background: #eef2f8;
-  --foreground: #171717;
+  --background: #eef1f8;
+  --foreground: #101828;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
-/* Tailwind v4엔 tailwind.config.js의 boxShadow 확장에 대응하는 게 --theme의 --shadow-*
-   토큰임 — 여기 등록하면 shadow-neu-raised 같은 유틸리티 클래스가 자동으로 생김(JS 설정
-   파일 자체가 이 프로젝트엔 없음, postcss.config.mjs만 있음).
+/* Tailwind v4의 기본 blue/gray 팔레트를 여기서 통째로 덮어씀 — text-blue-600·bg-gray-100
+   같은 유틸리티 클래스는 코드베이스 전체(수십 개 파일)에 이미 넓게 퍼져 있어서, 파일마다
+   색상값을 하나하나 바꾸는 대신 토큰 정의만 바꿔서 한 번에 전체 색감을 갈아끼움. */
+@theme {
+  /* 토스 시그니처 블루(#3182F6)를 500으로 놓고 나머지 스텝을 그 주변으로 보간 — 기존
+     blue-500(#3b82f6)보다 살짝 더 채도 높고 순수한 파랑이라 CTA/포인트가 더 "확신 있게"
+     보임(사용자가 말한 "디테일이 죽어있다"의 핵심 원인 중 하나 — 기본 파랑은 톤이 밋밋함). */
+  --color-blue-50: #eef6ff;
+  --color-blue-100: #dbebff;
+  --color-blue-400: #5b9df9;
+  --color-blue-500: #3182f6;
+  --color-blue-600: #1b64da;
+  --color-blue-700: #144ead;
 
-   듀얼 쉐도우 색은 순수 회색/흰색이 아니라 배경(#eef2f8)의 블루 톤에 맞춰 어두운 쪽은
+  /* 순회색(Tailwind 기본) 대신 파란 기가 살짝 도는 cool neutral 스케일 — 배경(#eef1f8)·
+     포인트 컬러(블루)와 한 가족처럼 어울리고, 900 쪽은 기본 gray-900(#111827)보다 살짝
+     더 진하고 차분해서 헤드라인 대비가 또렷해짐. */
+  --color-gray-100: #f2f4f7;
+  --color-gray-200: #e4e7ec;
+  --color-gray-300: #d0d5dd;
+  --color-gray-400: #96a0b3;
+  --color-gray-500: #667085;
+  --color-gray-600: #475467;
+  --color-gray-700: #344054;
+  --color-gray-900: #101828;
+}
+
+/* 듀얼 쉐도우 색은 순수 회색/흰색이 아니라 배경(#eef2f8)의 블루 톤에 맞춰 어두운 쪽은
    중성 블랙, 밝은 쪽은 옅은 블루(rgba(210,225,255,~))로 잡음 — 흰색 하이라이트를 그대로
    쓰면 블루 배경 위에서 붕 떠 보임(요청 원칙 2번, "다크/블루톤 배경이면 흰색 대신 블루
-   계열 하이라이트"). */
+   계열 하이라이트"). 2026-08-25 — 퍼짐(blur)과 불투명도를 원래보다 20~25%가량 줄여서
+   요소 경계가 또렷해지게 크롭(기존 값은 카드가 많이 겹치는 목록 화면에서 그림자끼리
+   뭉개져 전체가 흐릿해 보이는 문제가 있었음). */
 @theme {
-  --color-neu-bg: #eef2f8;
-  --color-neu-surface: #eef2f8;
+  --color-neu-bg: #eef1f8;
+  --color-neu-surface: #eef1f8;
 
-  --shadow-neu-raised-sm: 3px 3px 6px rgba(0, 0, 0, 0.12), -3px -3px 6px rgba(210, 225, 255, 0.6);
-  --shadow-neu-raised: 6px 6px 12px rgba(0, 0, 0, 0.15), -6px -6px 12px rgba(210, 225, 255, 0.65);
-  --shadow-neu-raised-lg: 9px 9px 18px rgba(0, 0, 0, 0.18), -9px -9px 18px rgba(210, 225, 255, 0.75);
-  --shadow-neu-pressed: inset 3px 3px 6px rgba(0, 0, 0, 0.15), inset -3px -3px 6px rgba(210, 225, 255, 0.6);
-  --shadow-neu-inset: inset 4px 4px 8px rgba(0, 0, 0, 0.15), inset -4px -4px 8px rgba(210, 225, 255, 0.6);
-  --shadow-neu-focus: inset 4px 4px 8px rgba(0, 0, 0, 0.15), inset -4px -4px 8px rgba(210, 225, 255, 0.6),
-    0 0 0 3px rgba(59, 130, 246, 0.35);
+  --shadow-neu-raised-sm: 2px 2px 5px rgba(16, 24, 40, 0.1), -2px -2px 5px rgba(216, 228, 255, 0.75);
+  --shadow-neu-raised: 4px 4px 10px rgba(16, 24, 40, 0.13), -4px -4px 10px rgba(216, 228, 255, 0.8);
+  --shadow-neu-raised-lg: 7px 7px 16px rgba(16, 24, 40, 0.16), -7px -7px 16px rgba(216, 228, 255, 0.85);
+  --shadow-neu-pressed: inset 2px 2px 5px rgba(16, 24, 40, 0.13), inset -2px -2px 5px rgba(216, 228, 255, 0.75);
+  --shadow-neu-inset: inset 3px 3px 6px rgba(16, 24, 40, 0.13), inset -3px -3px 6px rgba(216, 228, 255, 0.75);
+  --shadow-neu-focus: inset 3px 3px 6px rgba(16, 24, 40, 0.13), inset -3px -3px 6px rgba(216, 228, 255, 0.75),
+    0 0 0 3px rgba(49, 130, 246, 0.35);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  /* Pretendard는 커닝이 촘촘한 서체라 큰 헤드라인에서 기본 자간이 살짝 벌어져 보임 —
+     아주 미세하게 좁혀서 "토스 느낌"의 타이트한 타이포 밀도를 냄. */
+  letter-spacing: -0.01em;
 }
