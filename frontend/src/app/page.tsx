@@ -78,15 +78,33 @@ const STEPS = [
   { step: "3", title: "맞춤 결과 확인", body: "조건에 맞는 장학금만 정리해서 보여드려요." },
 ] as const;
 
+// 2026-08-25 — "여기가 로그인 화면인 줄 알았다, 밑에 랜딩 콘텐츠 있는 걸 몰랐다"는 지적으로
+// 아이콘 하나뿐이던 걸 문구+배지 형태로 키움. 화면에 처음 들어왔을 때 이 버튼이 아직 안 보인
+// 상태(히어로가 막 페이드인)라 좀 늦게(800ms) 나타나게 지연시켜서 헤드라인이 먼저 눈에 들어온
+// 다음에 "이 아래도 더 있어요"가 자연스럽게 이어지게 함.
 function ScrollCue({ onClick }: { onClick: () => void }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), 800);
+    return () => clearTimeout(t);
+  }, []);
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label="아래로 스크롤"
-      className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce text-gray-300 transition hover:text-gray-400"
+      aria-label="아래로 스크롤해서 더 알아보기"
+      className={`absolute bottom-7 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5 rounded-full bg-neu-surface px-4 py-2.5 text-gray-500 shadow-neu-raised-sm transition-all duration-500 hover:text-blue-500 hover:shadow-neu-raised ${
+        show ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+      }`}
     >
-      <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2}>
+      <span className="text-[11px] font-semibold">더 알아보기</span>
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4 animate-bounce"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.5}
+      >
         <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </button>
@@ -172,7 +190,11 @@ export default function LandingPage() {
     <div className="flex min-h-screen flex-col bg-neu-bg">
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-16">
         {/* 배경 장식 — 순수 흰 배경이 밋밋하다는 피드백으로 추가. 새 색 없이 기존
-            blue-100/blue-50만 아주 옅게 블러 처리해서 존재감은 은은하게만 남김. */}
+            blue-100/blue-50만 아주 옅게 블러 처리해서 존재감은 은은하게만 남김.
+            2026-08-25 — "더 있어보이게" 요청으로 장학금 테마에 맞는 졸업모 이모지를 아주
+            크게·아주 옅게 워터마크처럼 얹음(실제 이미지 에셋 없이 순수 텍스트라 로딩비용
+            없음). 헤드라인과 안 겹치게 오른쪽 위로 밀어내고 회전시켜서 장식임을 분명히 함 —
+            본문 텍스트를 가리면 안 되니 select-none+aria-hidden으로 완전히 장식 전용 처리. */}
         <div
           aria-hidden
           className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-100 opacity-60 blur-3xl"
@@ -181,6 +203,13 @@ export default function LandingPage() {
           aria-hidden
           className="pointer-events-none absolute -bottom-32 -right-16 h-80 w-80 rounded-full bg-blue-50 opacity-80 blur-3xl"
         />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 top-16 select-none text-[13rem] leading-none opacity-[0.07] blur-[1px] sm:top-10 sm:text-[16rem]"
+          style={{ transform: "rotate(18deg)" }}
+        >
+          🎓
+        </div>
 
         <div className="relative mx-auto flex w-full max-w-md flex-col sm:max-w-lg md:max-w-xl">
           <div className="mb-10 flex items-center gap-2">
@@ -188,6 +217,14 @@ export default function LandingPage() {
               U
             </div>
             <span className="text-lg font-bold text-gray-900">UniSco</span>
+          </div>
+
+          {/* 2026-08-25 — 헤드라인 위에 작은 배지를 하나 얹어서(사용자 요청 "화살표 같은거
+              넣어서 시각적으로 있어보이게") CTA 버튼 하나뿐이던 히어로에 눈이 갈 지점을
+              하나 더 만듦. 반짝임 이모지는 순수 장식이라 aria-hidden. */}
+          <div className="mb-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600">
+            <span aria-hidden>✨</span>
+            대전권 대학생 전용 장학금 매칭
           </div>
 
           <h1 className="text-2xl font-bold leading-snug text-gray-900 sm:text-3xl">
