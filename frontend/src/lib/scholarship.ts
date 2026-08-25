@@ -103,8 +103,27 @@ export function isAutoSelected(s: Scholarship): boolean {
 // 애초에 "안내 목록" 페이지일 뿐 신청 관련 정보가 아예 없음(개별 레코드의 값 추측이
 // 아니라 페이지 자체를 직접 확인한 사실). application_method 값 유무와 무관하게 이
 // URL로 연결되는 건 항상 캡션을 띄움.
+//
+// 2026-08-25 UX 설문("지원 링크 클릭해도 신청 페이지로 안 감" 리포트) 계기로 전수
+// 재조사 — DB에서 application_url이 4건 이상 서로 다른 이름의 장학금에 동시에 쓰이는
+// 경우(총 29개 URL)를 전부 골라, 대학 하나의 장학금 URL이 40여 건씩 겹치는 게 구조적으로
+// 개별 신청서일 수 없다는 점에 착안해 위와 동일한 방식(fetch 후 신청 관련 키워드 유무)으로
+// 하나씩 직접 확인함. 아래 9개는 실제로 키워드가 전부 0건이라 안내/목록 페이지로 확정.
+// 반대로 같은 검사에서 "신청하기"/"접수기간" 등이 실제로 잡힌 URL(예: 여러 재단이 공유하는
+// 통합 신청 포털)은 여러 장학금이 공유해도 listing-only가 아니므로 그대로 뺌 — 페이지를
+// 안 열어보고 "겹치는 횟수"만으로 판단하지 않았음. kbtus.ac.kr·ent.wsu.ac.kr 등 일부는 fetch
+// 자체가 타임아웃/SSL 오류로 확인이 안 돼서 이번엔 추가 안 함(확인 안 된 건 안 넣는 원칙).
 const KNOWN_LISTING_ONLY_URLS = new Set([
   "https://plus.cnu.ac.kr/html/hub/support/support_030302.html",
+  "https://www.dju.ac.kr/dju/cm/cntnts/cntntsView.do?mi=1172&cntntsId=1064",
+  "http://janghak.hannam.ac.kr/main/",
+  "https://www.kaist.ac.kr/kr/html/edu/03110503.html",
+  "https://www.eulji.ac.kr/?menuno=3143",
+  "https://www.daejeonyouthportal.kr/content/CT_000000000501/cntPage.do",
+  "https://nuclear.kaist.ac.kr/informaiton/scholarship.php",
+  "https://www.asanfoundation.or.kr/af/bsns.supervision.scholarship0.sp?mid=10204",
+  "https://chem.kaist.ac.kr/scholarship",
+  "https://www.shinjae.or.kr/51/324",
 ]);
 
 export function isListingOnlyUrl(url: string | null): boolean {

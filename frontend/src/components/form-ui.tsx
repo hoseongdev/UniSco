@@ -15,10 +15,33 @@ export const inputClass =
 export const noSpinnerClass =
   "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
-export function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
+// 2026-08-25 추가 — UX 설문("필수/선택 구분이 안 보인다" 7/21 지적) 대응. required=true면
+// 라벨 옆에 빨간 별표, required=false면 회색 "선택" 배지를 붙여서 모든 입력 필드가 같은
+// 규칙으로 표시되게 함(이전엔 "직전학기 이수학점" 등 일부 필드만 라벨에 직접 "선택사항"
+// 문자열을 박아넣어서 필드마다 표시 여부가 들쭉날쭉했음 — 그 자리들도 이 prop으로 통일).
+// required를 아예 안 넘기면(undefined) 아무 표시도 안 함 — 3단계(OptionalFields) 전체처럼
+// 화면 상단 안내문("선택 항목이라 없으면 그냥 넘어가도 돼요")으로 이미 선택사항임을 밝힌
+// 곳까지 모든 필드에 배지를 반복해서 붙이면 오히려 시끄러워지므로, 그런 화면은 그대로 둠.
+export function Field({
+  label,
+  required,
+  children,
+}: {
+  label: React.ReactNode;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-sm font-semibold text-gray-700">{label}</span>
+      <span className="text-sm font-semibold text-gray-700">
+        {label}
+        {required === true && <span className="ml-1 text-red-500">*</span>}
+        {required === false && (
+          <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[11px] font-normal text-gray-400">
+            선택
+          </span>
+        )}
+      </span>
       {children}
     </label>
   );
@@ -71,14 +94,16 @@ export function SelectField({
   value,
   onChange,
   options,
+  required,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
+  required?: boolean;
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} required={required}>
       <PlainSelect value={value} onChange={onChange} options={options} />
     </Field>
   );
@@ -195,6 +220,12 @@ export function CollapsibleToggle({
   );
 }
 
+// 2026-08-25 — 모바일 반응형 QA(UX 설문 6순위, 5/21 지적) 중 발견: 이 컴포넌트의 알약 버튼들이
+// 세로 패딩이 py-2뿐이라 실측 높이가 약 34px로, 이 폼의 다른 버튼류(PillToggle 등 py-3.5,
+// 약 52px)보다 눈에 띄게 얇았음 — 애플 HIG/구글 머티리얼이 권장하는 최소 터치 영역(44px)에도
+// 못 미쳐서 특수상황·장애유형처럼 알약이 여러 줄로 촘촘히 나열되는 화면에서 오터치 유발.
+// min-h-[44px]로 하한을 못박고 py도 살짝 늘림(2.5) — 원래도 옆으로 넓게 배치되는 디자인이라
+// 높이만 키워도 레이아웃이 안 깨짐.
 export function MultiPillSelect({
   values,
   onChange,
@@ -218,7 +249,7 @@ export function MultiPillSelect({
           <button
             type="button"
             onClick={() => toggle(highlighted.value)}
-            className={`w-full rounded-xl px-4 py-2.5 text-center text-sm font-semibold transition ${
+            className={`w-full rounded-xl px-4 py-3.5 text-center text-sm font-semibold transition ${
               highlightSelected
                 ? "bg-neu-surface text-blue-600 shadow-neu-pressed"
                 : "bg-neu-surface text-stone-500 shadow-neu-raised-sm hover:shadow-neu-raised"
@@ -241,7 +272,7 @@ export function MultiPillSelect({
               key={opt.value}
               type="button"
               onClick={() => toggle(opt.value)}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={`min-h-[44px] rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                 isSelected
                   ? "bg-neu-surface text-blue-600 shadow-neu-pressed"
                   : "bg-neu-surface text-gray-500 shadow-neu-raised-sm hover:shadow-neu-raised"

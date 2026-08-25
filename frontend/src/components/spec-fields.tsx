@@ -73,6 +73,7 @@ export function SchoolFields({
     <>
       <SelectField
         label="소속 대학"
+        required
         value={spec.university}
         onChange={(v) => {
           const next = UNIVERSITIES.find((u) => u.name === v)!;
@@ -91,6 +92,7 @@ export function SchoolFields({
       {currentColleges.length > 0 && (
         <SelectField
           label="단과대"
+          required
           value={spec.college}
           onChange={(v) => {
             const nextCollege = currentColleges.find((c) => c.name === v)!;
@@ -109,6 +111,7 @@ export function SchoolFields({
       {currentDepartments.length > 0 ? (
         <SelectField
           label="학과"
+          required
           value={spec.department}
           onChange={(v) =>
             setSpec({
@@ -120,7 +123,7 @@ export function SchoolFields({
           options={currentDepartments.map((d) => ({ value: d, label: d }))}
         />
       ) : (
-        <Field label="학과 (선택)">
+        <Field label="학과" required={false}>
           <input
             type="text"
             value={spec.department}
@@ -133,6 +136,7 @@ export function SchoolFields({
 
       <SelectField
         label="입학전형"
+        required
         value={spec.admission_track}
         onChange={(v) => setSpec({ ...spec, admission_track: v as AdmissionTrack })}
         options={ADMISSION_TRACK_OPTIONS}
@@ -189,6 +193,7 @@ export function SchoolFields({
           <div>
             <SelectField
               label="학년"
+              required
               value={spec.grade}
               onChange={(v) => setSpec({ ...spec, grade: v })}
               options={gradeOptions(spec.department, spec.enrollment_status)}
@@ -205,7 +210,7 @@ export function SchoolFields({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="직전 학기 평점">
+        <Field label="직전 학기 평점" required>
           <div className="flex items-center rounded-2xl bg-neu-surface px-4 py-3.5 shadow-neu-inset transition focus-within:shadow-neu-focus">
             <input
               type="text"
@@ -230,7 +235,7 @@ export function SchoolFields({
           </div>
         </Field>
 
-        <Field label="누적 평점">
+        <Field label="누적 평점" required>
           <div className="flex items-center rounded-2xl bg-neu-surface px-4 py-3.5 shadow-neu-inset transition focus-within:shadow-neu-focus">
             <input
               type="text"
@@ -257,19 +262,14 @@ export function SchoolFields({
       </div>
 
       {/* 2026-08-21 — 선택정보(3단계)에서 이쪽 학적사항으로 이동. GPA 옆에 있는 편이 자연스럽고
-          (둘 다 성적 관련 자기입력값), 선택 입력이라 required는 안 붙임(null="모름"이면 이수학점
-          조건이 있는 장학금도 안 거름 — core/matching.py의 credits_matches() 참고).
+          (둘 다 성적 관련 자기입력값), 선택 입력이라 폼 제출에는 required를 안 붙임(null="모름"
+          이면 이수학점 조건이 있는 장학금도 안 거름 — core/matching.py의 credits_matches() 참고).
+          "선택" 표시는 Field의 required=false로 통일(2026-08-25, form-ui.tsx 참고 — 이전엔
+          라벨 문자열에 "선택사항"을 직접 박아넣었는데 필드마다 표시 방식이 달라서 통일함).
           2026-08-21 추가 — 원래는 다른 선택 항목들처럼 체크해서 펼치는 방식이었는데, 숫자 하나만
           물어보는 항목까지 한 번 더 눌러야 하는 게 불필요한 단계라 GPA처럼 바로 적을 수 있게
           바꿈(디자인 논의 결과 — 하위 항목이 여러 개인 어학점수·장애인은 펼치는 방식 유지). */}
-      <Field
-        label={
-          <>
-            직전학기 이수학점{" "}
-            <span className="text-xs font-normal text-gray-400">선택사항</span>
-          </>
-        }
-      >
+      <Field label="직전학기 이수학점" required={false}>
         <div className="flex items-center rounded-2xl bg-neu-surface px-4 py-3.5 shadow-neu-inset transition focus-within:shadow-neu-focus">
           <input
             type="text"
@@ -362,7 +362,7 @@ export function PersonalFields({
 
   return (
     <>
-      <Field label="이름">
+      <Field label="이름" required>
         <input
           type="text"
           required
@@ -374,7 +374,7 @@ export function PersonalFields({
         />
       </Field>
 
-      <Field label="생년월일">
+      <Field label="생년월일" required>
         <div className="grid grid-cols-3 gap-2">
           <PlainSelect
             value={birthYear}
@@ -394,7 +394,7 @@ export function PersonalFields({
         </div>
       </Field>
 
-      <Field label="성별">
+      <Field label="성별" required>
         <PillToggle
           value={spec.gender}
           onChange={(v) => setSpec({ ...spec, gender: v as "male" | "female" })}
@@ -446,12 +446,29 @@ export function PersonalFields({
         />
       )}
 
-      <SelectField
-        label="소득분위"
-        value={spec.income_bracket}
-        onChange={(v) => setSpec({ ...spec, income_bracket: v })}
-        options={INCOME_BRACKET_OPTIONS}
-      />
+      {/* 2026-08-25 추가 — UX 설문(7/21, "소득분위를 몰라서 입력이 어렵다") 대응. 이미
+          "모름" 옵션이 있어서 안 넣어도 매칭엔 문제없지만(leniency), 실제로 소득분위를
+          알 수 있으면 그만큼 랭킹 정확도가 올라가므로(confirmed_match_count) 확인 방법
+          자체를 안내함 — 복지로 "복지서비스 모의계산"이 정부 공식 소득분위 조회 서비스. */}
+      <Field label="소득분위" required={false}>
+        <p className="mb-2 text-xs text-gray-500">
+          본인 소득분위를 모르면{" "}
+          <a
+            href="https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTFwlfareInfoIncomeSimulSearch.do"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="font-semibold text-blue-500 underline underline-offset-2"
+          >
+            복지로 소득분위 모의계산
+          </a>
+          에서 확인할 수 있어요. 몰라도 관련 장학금은 그대로 다 보여드려요.
+        </p>
+        <PlainSelect
+          value={spec.income_bracket}
+          onChange={(v) => setSpec({ ...spec, income_bracket: v })}
+          options={INCOME_BRACKET_OPTIONS}
+        />
+      </Field>
     </>
   );
 }

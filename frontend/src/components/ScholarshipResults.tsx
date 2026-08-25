@@ -22,6 +22,28 @@ import {
 
 const PAGE_SIZE = 15;
 
+// 2026-08-25 추가 — UX 설문(9/21, "금액 구간 필터가 있으면 좋겠다") 대응. amount가 null인
+// 장학금(금액 미정 — "조건별로 달라요" 유형 등)은 어떤 구간을 골라도 안 걸러지게 항상 통과시킴
+// (실제로 그 구간에 안 들 수도 있는데 숨겨버리면 과소매칭 — 이 프로젝트 전반의 "모르면 보여준다"
+// 원칙과 동일, backend/app/core/matching.py 참고).
+type AmountRange = "all" | "under1m" | "1to3m" | "3to5m" | "over5m";
+
+const AMOUNT_RANGE_OPTIONS: { value: AmountRange; label: string }[] = [
+  { value: "all", label: "전체" },
+  { value: "under1m", label: "100만원 미만" },
+  { value: "1to3m", label: "100~300만원" },
+  { value: "3to5m", label: "300~500만원" },
+  { value: "over5m", label: "500만원 이상" },
+];
+
+function matchesAmountRange(amount: number | null, range: AmountRange): boolean {
+  if (range === "all" || amount == null) return true;
+  if (range === "under1m") return amount < 1_000_000;
+  if (range === "1to3m") return amount >= 1_000_000 && amount < 3_000_000;
+  if (range === "3to5m") return amount >= 3_000_000 && amount < 5_000_000;
+  return amount >= 5_000_000;
+}
+
 function Pagination({
   page,
   totalPages,
@@ -143,6 +165,7 @@ export function ScholarshipResults({
   const [sortBy, setSortBy] = useState<SortBy>("relevance");
   const [categoryL1, setCategoryL1] = useState<CategoryL1 | "all">("all");
   const [categoryL2, setCategoryL2] = useState<string | null>(null);
+  const [amountRange, setAmountRange] = useState<AmountRange>("all");
   // null = 로그인 안 함(하트 자체를 숨김). 로그인 상태면 처음엔 빈 Set으로 시작했다가
   // useEffect에서 실제 찜 목록으로 채움 — 게스트/로그인 여부 판단이 localStorage를 읽어야
   // 해서 SSR에선 못 하므로, 여기도 home 화면과 같은 이유로 useEffect 안에서만 판단함
@@ -197,10 +220,11 @@ export function ScholarshipResults({
   }
 
   const categoryFiltered = results.filter((s) => {
-    if (categoryL1 === "all") return true;
-    if (s.category_l1 !== categoryL1) return false;
-    if (categoryL2 && s.category_l2 !== categoryL2) return false;
-    return true;
+    if (categoryL1 !== "all") {
+      if (s.category_l1 !== categoryL1) return false;
+      if (categoryL2 && s.category_l2 !== categoryL2) return false;
+    }
+    return matchesAmountRange(s.amount, amountRange);
   });
   const filteredSorted = sortScholarships(categoryFiltered, sortBy);
   const totalAmount = filteredSorted.reduce((sum, s) => sum + (s.amount ?? 0), 0);
@@ -282,6 +306,26 @@ export function ScholarshipResults({
               sortBy === opt.value
                 ? "shadow-neu-pressed text-blue-600"
                 : "text-gray-500 shadow-neu-raised-sm hover:shadow-neu-raised"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
+        {AMOUNT_RANGE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => {
+              setAmountRange(opt.value);
+              setPage(1);
+            }}
+            className={`shrink-0 rounded-full bg-neu-surface px-3 py-1.5 text-[11px] font-semibold transition ${
+              amountRange === opt.value
+                ? "shadow-neu-pressed text-blue-600"
+                : "text-gray-400 shadow-neu-raised-sm hover:shadow-neu-raised"
             }`}
           >
             {opt.label}

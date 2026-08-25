@@ -203,41 +203,14 @@ export default function ScholarshipDetailPage({
               <StatBox label="선발인원" value={scholarship.headcount ?? "정보 없음"} tone="gray" />
             </div>
 
-            {/* 금액/기간/신청방식 — 예전엔 description을 문장 그대로 쭉 나열해서 읽기
-                힘들었음(2026-08-11 지적). 2026-08-14부터 이 세 항목을 구조화된 칸
-                (amount_detail/application_period/application_method)으로 나눠서 보여줌.
-                값이 없으면 "정보 없음"으로 표시 — 위 StatBox랑 동일한 원칙(칸 개수가
-                장학금마다 들쭉날쭉하지 않게). */}
-            <div className="mt-7 pb-7">
-              <SectionHeading>금액</SectionHeading>
-              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700">
-                {scholarship.amount_detail ?? formatAmount(scholarship.amount) ?? "정보 없음"}
-              </p>
-            </div>
-
-            <div className="mt-7 pb-7">
-              <SectionHeading>신청방식</SectionHeading>
-              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700">
-                {scholarship.application_method ?? "정보 없음"}
-              </p>
-            </div>
-
-            <div className="mt-7 pb-7">
-              <SectionHeading>기간</SectionHeading>
-              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700">
-                {/* application_period가 없을 때 application_method를 대신 보여주면 바로 위
-                    "신청방식" 섹션과 문장이 그대로 중복돼 보임(2026-08-15 리뷰에서 발견) —
-                    금액/신청방식과 동일하게 "정보 없음"으로 통일. */}
-                {scholarship.application_period ?? "정보 없음"}
-              </p>
-            </div>
-
-            {/* 자격조건 — 시스템이 실제로 걸러낸 조건(파란 점), 원문엔 있지만 아직 필터에는
-                못 쓰는 조건(이수학점·입학성적, 노란 점 — 학생이 직접 확인해야 함), 그리고
-                구조화된 칸 어디에도 안 들어가는 나머지 조건 설명(description, 노란 점)을
-                한 목록 안에서 점 색깔로 구분해서 보여줌(2026-08-11 사용자 아이디어, 2026-08-14
-                description을 여기로 통합). */}
-            <div className="mt-7">
+            {/* 자격조건 — 2026-08-25 UX 설문(9/21, "필수 조건이 한눈에 안 들어온다") 대응으로
+                맨 아래(금액/신청방식/기간 다음)에 있던 걸 상단 StatBox 바로 아래로 옮김 — 학생이
+                스크롤 없이 "나 여기 지원 자격 되나"부터 바로 확인할 수 있게. 시스템이 실제로
+                걸러낸 조건(파란 점), 원문엔 있지만 아직 필터에는 못 쓰는 조건(이수학점·입학성적,
+                노란 점 — 학생이 직접 확인해야 함), 그리고 구조화된 칸 어디에도 안 들어가는 나머지
+                조건 설명(description, 노란 점)을 한 목록 안에서 점 색깔로 구분해서 보여줌
+                (2026-08-11 사용자 아이디어, 2026-08-14 description을 여기로 통합). */}
+            <div className="mt-6">
               <SectionHeading>자격조건</SectionHeading>
               <p className="mt-1 text-xs text-gray-400">
                 <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-blue-400" />
@@ -283,6 +256,35 @@ export default function ScholarshipDetailPage({
                     </li>
                   ))}
               </ul>
+            </div>
+
+            {/* 금액/기간/신청방식 — 예전엔 description을 문장 그대로 쭉 나열해서 읽기
+                힘들었음(2026-08-11 지적). 2026-08-14부터 이 세 항목을 구조화된 칸
+                (amount_detail/application_period/application_method)으로 나눠서 보여줌.
+                값이 없으면 "정보 없음"으로 표시 — 위 StatBox랑 동일한 원칙(칸 개수가
+                장학금마다 들쭉날쭉하지 않게). */}
+            <div className="mt-7 pb-7">
+              <SectionHeading>금액</SectionHeading>
+              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700">
+                {scholarship.amount_detail ?? formatAmount(scholarship.amount) ?? "정보 없음"}
+              </p>
+            </div>
+
+            <div className="mt-7 pb-7">
+              <SectionHeading>신청방식</SectionHeading>
+              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700">
+                {scholarship.application_method ?? "정보 없음"}
+              </p>
+            </div>
+
+            <div className="mt-7 pb-7">
+              <SectionHeading>기간</SectionHeading>
+              <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700">
+                {/* application_period가 없을 때 application_method를 대신 보여주면 바로 위
+                    "신청방식" 섹션과 문장이 그대로 중복돼 보임(2026-08-15 리뷰에서 발견) —
+                    금액/신청방식과 동일하게 "정보 없음"으로 통일. */}
+                {scholarship.application_period ?? "정보 없음"}
+              </p>
             </div>
 
             {/* 추천 장학금 — 지금 보는 장학금과 같은 분류(중분류>대분류)를 우선으로 최대 3개.

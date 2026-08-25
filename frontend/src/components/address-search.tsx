@@ -90,7 +90,7 @@ export function AddressSearchField({
   }
 
   return (
-    <Field label={label}>
+    <Field label={label} required={required}>
       <div className="flex gap-2">
         <input
           type="text"
@@ -101,10 +101,13 @@ export function AddressSearchField({
           onClick={handleSearch}
           className={`${inputClass} cursor-pointer ${error ? "shadow-neu-focus ring-2 ring-red-400" : ""}`}
         />
+        {/* 2026-08-25 — 버튼에 세로 패딩이 없어서 옆 인풋(py-3.5, 실측 약 52px)보다 훨씬
+            얇게 렌더링되던 문제(모바일 반응형 QA 중 발견, UX 설문 6순위) — 터치 영역이
+            44px 권장치에 크게 못 미쳤음. 인풋과 동일한 py-3.5로 맞춰 높이도 통일. */}
         <button
           type="button"
           onClick={handleSearch}
-          className="shrink-0 rounded-2xl bg-neu-surface px-4 text-sm font-semibold text-gray-600 shadow-neu-raised transition hover:shadow-neu-raised-lg active:shadow-neu-pressed"
+          className="shrink-0 rounded-2xl bg-neu-surface px-4 py-3.5 text-sm font-semibold text-gray-600 shadow-neu-raised transition hover:shadow-neu-raised-lg active:shadow-neu-pressed"
         >
           주소 검색
         </button>
