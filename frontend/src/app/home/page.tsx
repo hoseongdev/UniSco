@@ -213,7 +213,7 @@ export default function HomePage() {
                 onClick={dismissGuestWarning}
                 className="w-full rounded-xl bg-neu-surface py-2.5 text-xs font-bold text-gray-600 shadow-neu-raised-sm transition active:shadow-neu-pressed"
               >
-                알겠어요
+                확인했습니다
               </button>
               <Link
                 href="/signup"
