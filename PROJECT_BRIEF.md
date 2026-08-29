@@ -8,7 +8,7 @@ Korea already has government-run matching services (온통청년, 복지로, 한
 
 ## Team & roles
 - **호성 (repo owner, hoseongdev)**: PM + full-stack developer. Owns architecture, implementation, technical decisions.
-- **Friend (non-technical, no dev experience)**: Data collection & structuring (scholarship/grant eligibility rules), content, possibly user research/marketing. Not writing code.
+- **Friend (bumku09-stack, non-technical background)**: Started as data collection & structuring, but ended up submitting real PRs too (matching-logic fixes, new eligibility fields, university onboarding) via Claude Code — role grew past "not writing code" as the project went on.
 
 ## MVP scope (v1 target)
 1. **Users input a spec**: school year, major, income bracket (소득분위), region, military service status (optional fields TBD)
